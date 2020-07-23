@@ -2,7 +2,7 @@
 """
 Preprocess dataset
 
-usage: preprocess.py [options] <dataset_dir> <feats_path>
+usage: preprocess.py [options] <dataset_dir> <feats_dir>
 
 options:
     --num_workers=<n>        Num workers.
@@ -61,9 +61,9 @@ class PreProcessBase(object):
 
         self.feats = utils.GetFeatScp(self.utt2wav, self.feats_dir)
 
-        if not os.path.exists(feats_path):
-            os.makedirs(feats_path,exist_ok=True)
-            print("Creat a folder: %s"%feats_path)
+        if not os.path.exists(feats_dir):
+            os.makedirs(feats_dir, exist_ok=True)
+            print("Creat a folder: %s"%feats_dir)
 
     def extract_feature(self, wavefile_path):
         raise Exception("Please implement this function")
@@ -120,7 +120,7 @@ class LogMelPreProcess(PreProcessBase):
 if __name__ == "__main__":
     args = docopt(__doc__)
     dataset_dir = args["<dataset_dir>"]
-    feats_path   = args["<feats_path>"]
+    feats_dir   = args["<feats_dir>"]
     num_workers  = args["--num_workers"]
 
     if num_workers is None: num_workers = 1
@@ -132,10 +132,10 @@ if __name__ == "__main__":
     
     print(hparams_debug_string())
 
-    print("The feature file will be located in {}".format(feats_path))
+    print("The feature file will be located in {}".format(feats_dir))
     time_tag = time.time()
 
-    preProcess = LogMelPreProcess(dataset_dir, feats_path)
+    preProcess = LogMelPreProcess(dataset_dir, feats_dir)
     preProcess.process(int(num_workers))
     preProcess.write_feats_scp(os.path.join(dataset_dir, "feats.scp"))
     print("Done. {}".format(time.time() - time_tag))
