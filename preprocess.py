@@ -2,7 +2,7 @@
 """
 Preprocess dataset
 
-usage: preprocess.py [options] <dataset_path> <feats_path>
+usage: preprocess.py [options] <dataset_dir> <feats_path>
 
 options:
     --num_workers=<n>        Num workers.
@@ -48,18 +48,18 @@ def logmeldeltasx3(logmel):
 
 class PreProcessBase(object):
 
-    def __init__(self, dataset_path, feats_path):
-        self.dataset_path = dataset_path
-        self.feats_path = feats_path
+    def __init__(self, dataset_dir, feats_dir):
+        self.dataset_dir = dataset_dir
+        self.feats_dir = feats_dir
 
-        if not os.path.exists(os.path.join(dataset_path, "wav.scp")):
+        if not os.path.exists(os.path.join(dataset_dir, "wav.scp")):
             raise RuntimeError("wav.scp does not exist.")
 
-        utt2wav,wav2utt = utils.ReadWavScp(os.path.join(dataset_path, "wav.scp"))
+        utt2wav,wav2utt = utils.ReadWavScp(os.path.join(dataset_dir, "wav.scp"))
         self.utt2wav = utt2wav
         self.wav2utt = wav2utt
 
-        self.feats = dict()
+        self.feats = utils.GetFeatScp(self.utt2wav, self.feats_dir)
 
         if not os.path.exists(feats_path):
             os.makedirs(feats_path,exist_ok=True)
@@ -81,7 +81,16 @@ class PreProcessBase(object):
 
         return [future.result() for future in tqdm(futures)]
 
-def LogMelOneChannelSave(x, the_feats_path, utt_id):
+    def write_feats_scp(self, feats_scp_path):
+        feats_scp_content = ""
+        for k,v in self.feats.items():
+            feats_scp_content += "{} {}\n".format(k, v)
+        with open(feats_scp_path, 'w') as fp:
+            fp.write(feats_scp_content)
+            fp.close()
+        print("Write Done %s"%feats_scp_path)
+
+def LogMelOneChannelSave(x, the_feats_path):
     F = librosa.feature.melspectrogram(x,
                         sr=hparams.sample_rate,
                         n_fft=hparams.n_fft,
@@ -98,22 +107,19 @@ def LogMelOneChannelSave(x, the_feats_path, utt_id):
 
 class LogMelPreProcess(PreProcessBase):
 
-    def __init__(self, wavefiles_path, feats_path = "datasets/features"):
+    def __init__(self, wavefiles_path, feats_path): 
         super().__init__(wavefiles_path, feats_path)
 
     def extract_feature(self, utt_id, wavefile_path):
     
         x , sr = librosa.load(wavefile_path, hparams.sample_rate)
-        the_feats_path = os.path.join(feats_path, utt_id + ".npy")
-        self.feats[utt_id] = the_feats_path
-        LogMelOneChannelSave(x, the_feats_path, utt_id)
-
+        LogMelOneChannelSave(x, self.feats[utt_id])
         return
 
 
 if __name__ == "__main__":
     args = docopt(__doc__)
-    dataset_path = args["<dataset_path>"]
+    dataset_dir = args["<dataset_dir>"]
     feats_path   = args["<feats_path>"]
     num_workers  = args["--num_workers"]
 
@@ -129,8 +135,9 @@ if __name__ == "__main__":
     print("The feature file will be located in {}".format(feats_path))
     time_tag = time.time()
 
-    preProcess = LogMelPreProcess(dataset_path, feats_path)
+    preProcess = LogMelPreProcess(dataset_dir, feats_path)
     preProcess.process(int(num_workers))
+    preProcess.write_feats_scp(os.path.join(dataset_dir, "feats.scp"))
     print("Done. {}".format(time.time() - time_tag))
 
 

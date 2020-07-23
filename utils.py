@@ -17,6 +17,11 @@ def ReadWavScp(wav_scp_path):
 
     return (utt2wav, wav2utt)
 
+def GetFeatScp(utt2wav, feats_dir):
+    feats = dict()
+    for utt in utt2wav.keys():
+        feats[utt] = os.path.join(feats_dir, utt + ".npy")
+    return feats
 
 def getClassName(the_index):
     return hparams.labels[the_index]
