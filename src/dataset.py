@@ -1,97 +1,116 @@
-from torch.utils.data import Dataset
-import pandas as pd
-import numpy as np
-import pathlib
+import sys
+import os
 import re
 
-import utils
+import torch
+from torch.utils.data import Dataset
+import numpy as np
 
-# class Task1aDataSet2018(Dataset):
+sys.path.insert(1, os.path.join(sys.path[0], '../'))
+from utils import ReadUtt2Lang, ReadFeatsScp
 
-#     def __init__(self, db_path, class_map, feature_folder, mode="train"):
-#         #mode: train | test | eval
+def pad_tensor(vec, pad, dim):
+    """
+    args:
+        vec - tensor to pad
+        pad - the size to pad to
+        dim - dimension to pad
 
-#         #read the txt to the data_list
-#         self.db_path = db_path
-#         self.class_map = class_map
-#         df = pd.read_csv("{}/evaluation_setup/fold1_{}.txt".format(db_path, mode), sep="\t", header=None)
-
-#         self.X_filepaths = df[0].str.replace("audio", pathlib.Path(feature_folder).name).str.replace(".wav", "-A.npy")
-
-#         #TODO: maybe refer to meta.csv
-#         if mode == "test":
-#             self.y_classnames = df[0].str.split("/", expand=True)[1].str.split("-", n=1, expand=True)[0]
-#         else:
-#             self.y_classnames = df[1]
+    return:
+        a new tensor padded to 'pad' in dimension 'dim'
+    """
+    pad_size = list(vec.shape)
+    pad_size[dim] = pad - vec.shape[dim]
+    return np.concatenate([vec, np.zeros(pad_size)], axis=dim)
+    #print(np.concatenate([vec, np.zeros(pad_size)], axis=dim).shape)
 
 
-#         self.data_list = []
+class PadCollate(object):
+    """
+    a variant of callate_fn that pads according to the longest sequence in
+    a batch of sequences
+    """
 
-#     def __len__(self):
-#         return len(self.X_filepaths)
+    def __init__(self, dim=0):
+        """
+        args:
+            dim - the dimension to be padded (dimension of time in sequences)
+        """
+        self.dim = dim
 
-#     def __getitem__(self, idx):
+    def pad_collate(self, batch):
+        """
+        args:
+            batch - list of (tensor, label)
 
-#         path = self.X_filepaths[idx]
-#         f = open("{}/{}".format(self.db_path, path), 'rb')
-#         feature = np.load(f)
-#         label = self.class_map[self.y_classnames[idx]]
+        reutrn:
+            xs - a tensor of all examples in 'batch' after padding
+            ys - a LongTensor of all labels in batch
+        """
+        # find longest sequence
+        max_len = max(map(lambda x: x[0].shape[self.dim], batch))
+        # pad according to max_len
+        #batch = map(lambda x:
+        #                print(x[1]), batch) 
+        batch = map(lambda x:
+                (pad_tensor(x[0], pad=max_len, dim=self.dim), x[1]), batch)
+        batch = list(batch)
+        # stack all
+        xs = np.stack(list(map(lambda x: x[0], batch)))
+        ys = np.stack(list(map(lambda x: x[1], batch)))
+        #xs = list(map(lambda x: x[0], batch))
+        #ys = list(map(lambda x: x[1], batch))
+        #print(xs.shape)
+        #print(ys.shape)
+        return xs, ys
 
-#         return feature.T, label
+    def __call__(self, batch):
+        return self.pad_collate(batch)
 
-# class Task1aDataSet2019(Dataset):
+class KaldiDataSet(Dataset):
     
-#     def __init__(self, db_path, class_map, feature_folder, mode="train"):
-#         #mode: train | test | eval
-
-#         self.db_path = db_path
-#         self.class_map = class_map
-#         df = pd.read_csv("{}/evaluation_setup/fold1_{}.csv".format(db_path, mode), sep="\t")
-
-#         self.X_filepaths = feature_folder + "/" + df['filename'].str.replace('audio/','').str.replace('.wav','.npy')
-#         self.y_classnames = df['scene_label']
-
-#     def __len__(self):
-#         return len(self.X_filepaths)
-
-#     def __getitem__(self, idx):
-
-#         path = self.X_filepaths[idx]
-#         f = open(path, 'rb')
-#         feature = np.load(f)
-#         label = self.class_map[self.y_classnames[idx]]
-
-#         return feature.T, label
-        
-class ASCDataSet(Dataset):
-    
-    def __init__(self, db_path, class_map, feature_folder, mode="train"):
+    def __init__(self, dataset_dir, mode="train"):
         #mode: train | test | eval
 
-        self.db_path = db_path
-        self.class_map = class_map
+        utt2lang_path = os.path.join(dataset_dir, "utt2lang")
+        utt2feat_path = os.path.join(dataset_dir, "feats.scp")
 
-        datalist="{}/fold1_{}.csv".format(db_path, mode)
-        
-        df = pd.read_csv(datalist, sep="\t")
+        utt2lang, utt2lang_id = ReadUtt2Lang(utt2lang_path)
+        utt2feats = ReadFeatsScp(utt2feat_path)
 
-        self.filenames = df['filename']
+        self.X_feature = []
+        self.Y_lang_id = []
 
-        self.X_filepaths = feature_folder + "/" + df['filename'].str.replace('audio/','').str.replace('.wav','.npy')
-        self.y_classnames = df['scene_label']
-
-        print('{:^9s} {:>6d} {}'.format(mode, len(self.X_filepaths), datalist))
+        for utt,lang_id in utt2lang_id.items():
+            self.X_feature.append(utt2feats[utt])
+            self.Y_lang_id.append(lang_id)
 
     def __len__(self):
-        return len(self.X_filepaths)
+        return len(self.X_feature)
 
     def __getitem__(self, idx):
 
-        path = self.X_filepaths[idx]
+        path = self.X_feature[idx]
         f = open(path, 'rb')
         feature = np.swapaxes(np.load(f), 1, 2)
-        scene = self.class_map[self.y_classnames[idx]]
-        label_str = pathlib.Path(path).name.replace('.npy','')
-        device = utils.get_indexOfDevice(utils.getDevice(label_str))
+        lang_id = self.Y_lang_id[idx]
 
-        return feature, scene, device
+        return feature, lang_id
+
+def TestFeatureLength():
+    utt2feats = ReadFeatsScp("data/train/feats.scp")
+    for utt, feats in utt2feats.items():
+        F = np.load(feats)
+        print(utt, F.shape)
+
+if __name__=="__main__":
+    from hparams import hparams
+    from torch.utils.data import Dataset, DataLoader
+
+    dataset = KaldiDataSet("data/train", mode="train")
+    dataloader = DataLoader(dataset, collate_fn=PadCollate(dim=1), 
+                    batch_size=hparams.batch_size, shuffle=True)
+    #TestFeatureLength()
+
+    for x,y in dataloader:
+        print("Targets", x.shape,y.shape)
