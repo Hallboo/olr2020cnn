@@ -22,7 +22,7 @@ hparams = HParams(
     max_epoch=100,
     batch_size=128,
     
-    labels=[
+    lang=[
         'Kazak',
         'TE_IN',
         'Tibet',
