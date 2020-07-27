@@ -17,9 +17,20 @@ hparams = HParams(
 
     use_cuda=True,
     max_epoch=100,
-    batch_size=128,
+    batch_size=32,
     
-    lang=None
+    lang=[
+        "Kazak",
+        "Tibet",
+        "Uyghu",
+        "ct_cn",
+        "id_id",
+        "ja_jp",
+        "ko_kr",
+        "ru_ru",
+        "vi_vn",
+        "zh_cn"
+    ],
         #'Kazak',
         #'TE_IN',
         #'Tibet',

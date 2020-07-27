@@ -1,8 +1,5 @@
 
-export LD_LIBRARY_PATH="/home4/md510/gcc-5.2.0/lib64:$LD_LIBRARY_PATH"
-export PATH="/home4/md510/gcc-5.2.0/bin:$PATH"
-
-MAIN_ROOT=/home/zhb502/w2020/espnet
+MAIN_ROOT=/home/zhb502/w2019/espnet
 KALDI_ROOT=$MAIN_ROOT/tools/kaldi
 
 [ -f $KALDI_ROOT/tools/env.sh ] && . $KALDI_ROOT/tools/env.sh

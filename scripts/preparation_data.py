@@ -2,7 +2,7 @@
 import os
 import sys
 import re
-import utils
+import langid.utils as utils
 
 def GetNewUtt2DurAndSegment(max_seg, utt2dur, new_utt2dur_path, new_segment_path):
     utt2dur_str = ""
@@ -26,12 +26,13 @@ def GetNewUtt2DurAndSegment(max_seg, utt2dur, new_utt2dur_path, new_segment_path
             duration -= max_seg
             seg_index += 1
 
-        seg_utt = "{}-{}".format(utt, str(seg_index).zfill(6))
-        new_utt.append(seg_utt)
+        if duration > max_seg*0.25:
+            seg_utt = "{}-{}".format(utt, str(seg_index).zfill(6))
+            new_utt.append(seg_utt)
 
-        utt2dur_str += "{} {}\n".format(seg_utt, duration)
-        segment_str += "{} {} {} {}\n".format(seg_utt, utt, max_seg*(seg_index-1),
-                                                    duration+max_seg*(seg_index-1))
+            utt2dur_str += "{} {}\n".format(seg_utt, duration)
+            segment_str += "{} {} {} {}\n".format(seg_utt, utt, max_seg*(seg_index-1),
+                                                        duration+max_seg*(seg_index-1))
 
         diff = float(max_seg) - duration 
         assert(diff >= 0)
@@ -66,14 +67,14 @@ def GetNewUttAndLang(new_utts, utt2lang_path):
 
 if __name__=="__main__":
 
-    if len(sys.argv) < 3:
+    if len(sys.argv) != 4:
         raise ValueError(
             "Must 2 dataset: the path of source data and target data.")
 
-    max_seg = 8
-
-    sr_data = sys.argv[1]
-    tr_data = sys.argv[2]
+    max_seg = sys.argv[1]
+    max_seg = float(max_seg)
+    sr_data = sys.argv[2]
+    tr_data = sys.argv[3]
 
     print("Source Dataset:", sr_data)
     print("Target Dataset:", tr_data)
