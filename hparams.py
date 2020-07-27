@@ -15,7 +15,7 @@ hparams = HParams(
     # training testing evaluating
     model_type='Cnn_9layers_AvgPooling',
 
-    use_cuda=False,
+    use_cuda=True,
     max_epoch=100,
     batch_size=128,
     

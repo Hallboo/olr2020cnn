@@ -11,7 +11,7 @@ echo
 
 set -e
 
-. path.sh
+#. path.sh
 
 . parse_options.sh || exit 1
 
@@ -99,6 +99,15 @@ if [ ! -z $step03 ]; then
             $data $logdir $fbankdir
         utils/fix_data_dir.sh $data
     done
+fi
+
+exp_dir=exp/train_debug
+
+if [ ! -z $step04 ]; then
+    echo "##: Train Start:"
+    which python3
+    python3 train.py $trn_dir $dev_dir $exp_dir || exit 1;
+
 fi
 
 if false; then

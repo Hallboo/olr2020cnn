@@ -2,7 +2,7 @@
 """
 Preprocess dataset
 
-usage: preprocess.py [options] <trn_dir> <dev_dir> <exp_dir> 
+usage: train.py [options] <trn_dir> <dev_dir> <exp_dir> 
 
 options:
     --preset=<json>          Path of preset parameters (json).
@@ -21,7 +21,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from src.models import Cnn_9layers_AvgPooling
 from src.dataset import KaldiDataSet, PadCollate
-
+from evaluate import evaluate
 device = torch.device("cuda" if hparams.use_cuda else "cpu")
 
 def train(trn_dir, dev_dir, exp_dir):
@@ -91,7 +91,9 @@ def train(trn_dir, dev_dir, exp_dir):
                 "optimizer_state_dict": optimizer.state_dict(),
             }, os.path.join(exp_dir, 'best.pth'))
 
-        print("| Epoch: {:3d}, Eval loss: {:0.4f}, current acc: {:2.3f}%, the best: {:2.3f}%".format(current_epoch, eval_loss, acc*100, best_acc*100))
+        print('''| Epoch: {:3d}, Eval loss: {:0.4f}, 
+            current acc: {:2.3f}%, the best: {:2.3f}%'''.format(
+                current_epoch, eval_loss, acc*100, best_acc*100))
 
 if __name__=="__main__":
     args = docopt(__doc__)
