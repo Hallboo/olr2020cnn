@@ -155,8 +155,6 @@ class Cnn_9layers_AvgPooling(nn.Module):
         
         if hparams.deltas:
             num_in_channels=3
-        elif hparams.do_hpss:
-            num_in_channels=2
         else:
             num_in_channels=1
         
@@ -194,9 +192,6 @@ class Cnn_9layers_AvgPooling(nn.Module):
         
         if self.activation == 'logsoftmax':
             output = F.log_softmax(x, dim=-1)
-            
-        elif self.activation == 'sigmoid':
-            output = torch.sigmoid(x)
         
         return output
     

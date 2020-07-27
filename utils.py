@@ -2,6 +2,18 @@ import os
 import re
 from hparams import hparams
 
+def ReadLang2UttGetLangLabel(lang2utt_path):
+    lang2utt = Read2Column(lang2utt_path)
+    lang_list = list(lang2utt.keys())
+    lang_list.sort()
+    lang_dict = dict()
+    for i in range(len(lang_list)):
+        lang_dict[lang_list[i]] = i
+
+    #for k,v in lang_dict.items():
+    #    print(k,v)
+    return lang_dict, lang_list
+
 def Read2Column(file_path):
     the_dict = dict()
     with open(file_path, 'r') as fp:
@@ -82,4 +94,5 @@ if __name__ == "__main__":
     #for k,v in get_index2label().items():
     #    print(k,v)
     #TestRead2Column() 
-    TestReadUtt2Lang()
+    #TestReadUtt2Lang()
+    ReadLang2UttGetLangLabel("data/trn/spk2utt")

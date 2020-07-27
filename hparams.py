@@ -13,33 +13,30 @@ hparams = HParams(
     deltas=False,
 
     # training testing evaluating
-    model_type='Cnn_13layers_AvgPooling',
-    # Cnn_5layers_AvgPooling,
-    # Cnn_9layers_MaxPooling,
-    # Cnn_9layers_AvgPooling,
-    # Cnn_13layers_AvgPooling
-    use_cuda=True,
+    model_type='Cnn_9layers_AvgPooling',
+
+    use_cuda=False,
     max_epoch=100,
     batch_size=128,
     
-    lang=[
-        'Kazak',
-        'TE_IN',
-        'Tibet',
-        'Uyghu',
-        'ca_es',
-        'ct_cn',
-        'el_gr',
-        'id_id',
-        'ja_jp',
-        'ko_kr',
-        'ru_ru',
-        'shanghai',
-        'sichuan',
-        'minnan',
-        'vi_vn',
-        'zh_cn',
-    ],
+    lang=None
+        #'Kazak',
+        #'TE_IN',
+        #'Tibet',
+        #'Uyghu',
+        #'ca_es',
+        #'ct_cn',
+        #'el_gr',
+        #'id_id',
+        #'ja_jp',
+        ##'ko_kr',
+        #'ru_ru',
+        #'shanghai',
+        #'sichuan',
+        #'minnan',
+        #'vi_vn',
+        #'zh_cn',
+    #],
 )
 
 def hparams_debug_string():

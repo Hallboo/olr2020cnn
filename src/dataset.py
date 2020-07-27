@@ -5,6 +5,7 @@ import re
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import kaldiio
 
 sys.path.insert(1, os.path.join(sys.path[0], '../'))
 from utils import ReadUtt2Lang, ReadFeatsScp
@@ -22,8 +23,6 @@ def pad_tensor(vec, pad, dim):
     pad_size = list(vec.shape)
     pad_size[dim] = pad - vec.shape[dim]
     return np.concatenate([vec, np.zeros(pad_size)], axis=dim)
-    #print(np.concatenate([vec, np.zeros(pad_size)], axis=dim).shape)
-
 
 class PadCollate(object):
     """
@@ -52,9 +51,11 @@ class PadCollate(object):
         # pad according to max_len
         #batch = map(lambda x:
         #                print(x[1]), batch) 
+
         batch = map(lambda x:
                 (pad_tensor(x[0], pad=max_len, dim=self.dim), x[1]), batch)
         batch = list(batch)
+
         # stack all
         xs = np.stack(list(map(lambda x: x[0], batch)))
         ys = np.stack(list(map(lambda x: x[1], batch)))
@@ -69,7 +70,7 @@ class PadCollate(object):
 
 class KaldiDataSet(Dataset):
     
-    def __init__(self, dataset_dir, mode="train"):
+    def __init__(self, dataset_dir):
         #mode: train | test | eval
 
         utt2lang_path = os.path.join(dataset_dir, "utt2lang")
@@ -77,6 +78,9 @@ class KaldiDataSet(Dataset):
 
         utt2lang, utt2lang_id = ReadUtt2Lang(utt2lang_path)
         utt2feats = ReadFeatsScp(utt2feat_path)
+
+        print("[ KaldiDataSet ] {} num of feat:{}".format(
+                                    dataset_dir, len(utt2feats)))
 
         self.X_feature = []
         self.Y_lang_id = []
@@ -91,8 +95,8 @@ class KaldiDataSet(Dataset):
     def __getitem__(self, idx):
 
         path = self.X_feature[idx]
-        f = open(path, 'rb')
-        feature = np.swapaxes(np.load(f), 1, 2)
+        feature = kaldiio.load_mat(path)
+        feature = np.expand_dims(feature, axis=0)
         lang_id = self.Y_lang_id[idx]
 
         return feature, lang_id
@@ -104,13 +108,17 @@ def TestFeatureLength():
         print(utt, F.shape)
 
 if __name__=="__main__":
+
+    ## test test test test test test test test
     from hparams import hparams
     from torch.utils.data import Dataset, DataLoader
 
-    dataset = KaldiDataSet("data/train", mode="train")
+    #TestFeatureLength()
+
+    dataset = KaldiDataSet("data/trn", mode="train")
     dataloader = DataLoader(dataset, collate_fn=PadCollate(dim=1), 
                     batch_size=hparams.batch_size, shuffle=True)
-    #TestFeatureLength()
 
     for x,y in dataloader:
         print("Targets", x.shape,y.shape)
+

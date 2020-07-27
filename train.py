@@ -2,7 +2,7 @@
 """
 Preprocess dataset
 
-usage: preprocess.py [options] <db_path> <feat_path> <exp/task> 
+usage: preprocess.py [options] <trn_dir> <dev_dir> <exp_dir> 
 
 options:
     --preset=<json>          Path of preset parameters (json).
@@ -10,7 +10,7 @@ options:
 """
 
 from docopt import docopt
-from utils import get_label2index, getClassName
+import utils
 from hparams import hparams, hparams_debug_string
 
 import os, sys
@@ -19,17 +19,18 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-from asc.models import Cnn_9layers_AvgPooling
-from asc.models import (Cnn_5layers_AvgPooling, Cnn_9layers_MaxPooling, Cnn_13layers_AvgPooling)
-from asc.dataset import ASCDataSet
-
-from evaluate import evaluate
+from src.models import Cnn_9layers_AvgPooling
+from src.dataset import KaldiDataSet, PadCollate
 
 device = torch.device("cuda" if hparams.use_cuda else "cpu")
 
-def train(db_path, feat_path, exp_dir):
+def train(trn_dir, dev_dir, exp_dir):
 
-    in_domain_classes_num = len(hparams.labels)
+    lang_dict, lang_list = utils.ReadLang2UttGetLangLabel(
+                                os.path.join(trn_dir, "spk2utt"))
+    hparams.lang = lang_list
+
+    in_domain_classes_num = len(lang_list)
 
     Model = eval(hparams.model_type)
 
@@ -46,10 +47,13 @@ def train(db_path, feat_path, exp_dir):
         eps=1e-08, weight_decay=0., amsgrad=True)
     
     # Data generator
-    data_set_train = ASCDataSet(db_path, get_label2index(), feature_folder=feat_path, mode="train")
-    data_set_eval  = ASCDataSet(db_path, get_label2index(), feature_folder=feat_path, mode="evaluate")
-    dataloader = DataLoader(data_set_train, batch_size=hparams.batch_size, shuffle=True)
-    dataloader_eval = DataLoader(data_set_eval, batch_size=hparams.batch_size, shuffle=True)
+    data_set_trn = KaldiDataSet(trn_dir)
+    data_set_dev = KaldiDataSet(dev_dir)
+    dataloader_trn = DataLoader(data_set_trn, collate_fn=PadCollate(dim=1),
+                                batch_size=hparams.batch_size, shuffle=True)
+    dataloader_dev = DataLoader(data_set_dev, collate_fn=PadCollate(dim=1),
+                                batch_size=hparams.batch_size, shuffle=True)
+
     criterion = nn.NLLLoss()
     losses = []
     log_interval = 10
@@ -60,7 +64,7 @@ def train(db_path, feat_path, exp_dir):
         batch = 0
         model.train()
 
-        for x, targets, _ in dataloader:
+        for x,targets in dataloader_trn:
             x = torch.FloatTensor(x).to(device)
             targets = torch.LongTensor(targets).to(device)
 
@@ -74,13 +78,10 @@ def train(db_path, feat_path, exp_dir):
             loss.backward()
             optimizer.step()
 
-            # if batch % log_interval == 0 and batch > 0:
-            #     avg_loss = total_loss / batch
-            #     print('| Epoch {:3d} | Batch {:3d} | Loss {:0.8f}'.format(current_epoch, batch, avg_loss))
-
             batch += 1
         
-        acc, eval_loss, confusion_matrix = evaluate(model, criterion, dataloader_eval, exp_dir)
+        acc, eval_loss, confusion_matrix = evaluate(model, criterion,
+                                                    dataloader_dev, exp_dir)
         if best_acc < acc:
             best_acc = acc
             torch.save({
@@ -94,9 +95,9 @@ def train(db_path, feat_path, exp_dir):
 
 if __name__=="__main__":
     args = docopt(__doc__)
-    db_path = args['<db_path>']
-    feat_path = args['<feat_path>']
-    exp_dir = args['<exp/task>']
+    trn_dir = args['<trn_dir>']
+    dev_dir = args['<dev_dir>']
+    exp_dir = args['<exp_dir>']
     preset = args["--preset"]
 
     if preset is not None:
@@ -107,9 +108,10 @@ if __name__=="__main__":
     os.makedirs(exp_dir, exist_ok=True)
 
     fp = open(os.path.join(exp_dir, "config.json"),'w')
-    fp.write(hparams.to_json(indent=' '*4))
+    fp.write(hparams.to_json(indent=' '*2))
     fp.close()
 
     print(hparams_debug_string())
 
-    train(db_path, feat_path, exp_dir)
+    train(trn_dir, dev_dir, exp_dir)
+
