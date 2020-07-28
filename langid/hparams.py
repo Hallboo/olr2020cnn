@@ -1,4 +1,4 @@
-from src.tfcompat.hparam import HParams
+from tfcompat.hparam import HParams
 import numpy as np
 
 # Default hyperparameters:

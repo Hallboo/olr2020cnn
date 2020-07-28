@@ -85,7 +85,11 @@ class KaldiDataSet(Dataset):
         self.X_feature = []
         self.Y_lang_id = []
 
+        # idx2utt for compute cavg in langid/evaluate.py
+        self.idx2utt = []
+
         for utt,lang_id in utt2lang_id.items():
+            self.idx2utt.append(utt)
             self.X_feature.append(utt2feats[utt])
             self.Y_lang_id.append(lang_id)
 

@@ -80,6 +80,51 @@ def evaluate(model, criterion, dataloader, exp_dir):
 
     return acc, eval_loss, confu_mat
 
+def Evaluate(model, criterion, dataloader, exp_dir):
+    model.eval()
+
+    total_loss = 0
+    batch = 0
+
+    all_outputs = []
+    all_targets = []
+
+    # with torch.no_grad():
+    #     for x, targets in dataloader:
+    #         x = torch.FloatTensor(x).to(device)
+    #         targets = torch.LongTensor(targets).to(device)
+    #         outputs = model(x)
+    #         loss = criterion(outputs, targets)
+    #         total_loss += loss
+
+    #         all_outputs.append(outputs)
+    #         all_targets.append(targets)
+
+    #         batch += 1
+    # # forward done, got all prediction of evaluate data, Start statistic
+
+    #eval_loss = total_loss / batch
+    # all_outputs = torch.cat(all_outputs).cpu().data.numpy()
+    # all_targets = torch.cat(all_targets).cpu().data.numpy()
+
+    # np.save("outputs.npy", all_outputs)
+    # np.save("targets.npy", all_targets)
+
+    all_outputs = np.load("outputs.npy", allow_pickle=True)
+    all_targets = np.load("targets.npy", allow_pickle=True)
+    all_predict = np.argmax(all_outputs, axis = 1)
+
+    
+    #all_predict = np.where(all_outputs == np.amax(all_outputs))
+
+    #assert(all_predict.shape == all_targets.shape)
+    #print(all_predict)
+    print(all_outputs[0])
+    print(all_predict[0])
+    
+
+    
+
 if __name__=="__main__":
     args = docopt(__doc__)
     dev_dir = args['<dev_dir>']
@@ -111,4 +156,4 @@ if __name__=="__main__":
     dataloader_dev = DataLoader(data_set_dev, collate_fn=PadCollate(dim=1),
                                 batch_size=hparams.batch_size, shuffle=True)
 
-    evaluate(model, criterion, dataloader_dev, exp_dir)
+    Evaluate(model, criterion, dataloader_dev, exp_dir)

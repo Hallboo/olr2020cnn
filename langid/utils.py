@@ -10,21 +10,23 @@ def ReadLang2UttGetLangLabel(lang2utt_path):
     for i in range(len(lang_list)):
         lang_dict[lang_list[i]] = i
 
-    #for k,v in lang_dict.items():
-    #    print(k,v)
     return lang_dict, lang_list
 
 def Read2Column(file_path):
     the_dict = dict()
     with open(file_path, 'r') as fp:
         all_con = fp.read().splitlines()
-        for line in all_con:
-            line = line.strip()
-            if re.match(r'.*sox.*', line):
-                raise ValueError("Wrong wav.scp")
+        for lin in all_con:
+            lin = lin.strip()
             pat = r'(\S+)\s+(.+)'
-            co1 = re.findall(pat, line)[0][0]
-            co2 = re.findall(pat, line)[0][1]
+            tmp = re.findall(pat, lin)[0]
+            co1 = tmp[0]
+            co2 = tmp[1]
+            if " " in co2 and '/' in co2 and 'wav' in co2:
+                co2sp = co2.split()
+                for it in co2sp:
+                    if '/' in it and 'wav' in it:
+                        co2 = it
             if co1 not in the_dict:
                 the_dict[co1] = co2
             else:
@@ -81,7 +83,7 @@ def GetFeatScp(utt2wav, feats_dir):
     return feats
 
 def GetLang2LangID():
-    lang2lang_id=dict()
+    lang2lang_id = dict()
     for i in range(len(hparams.lang)):
         lang2lang_id[hparams.lang[i]] = i
     return lang2lang_id
@@ -95,4 +97,7 @@ if __name__ == "__main__":
     #    print(k,v)
     #TestRead2Column() 
     #TestReadUtt2Lang()
-    ReadLang2UttGetLangLabel("data/trn/spk2utt")
+    #ReadLang2UttGetLangLabel("data/trn/spk2utt")
+    utt2wav = Read2Column('data/dev_all/wav.scp')
+    for utt,wav in utt2wav.items():
+        print(utt, wav)
