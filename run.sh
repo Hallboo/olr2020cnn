@@ -39,7 +39,7 @@ if [ ! -z $step01 ]; then
     tr_data=data/train_seg
     
     # get utt2lang segments
-    python preparation_data.py 4 $sr_data $tr_data || exit 1;
+    python scripts/preparation_data.py 4 $sr_data $tr_data || exit 1;
     utils/utt2spk_to_spk2utt.pl < $tr_data/utt2lang > $tr_data/lang2utt || exit 1;
 
     cp $tr_data/utt2lang $tr_data/utt2spk
@@ -110,7 +110,7 @@ dev_dir=data/dev_all
 
 if [ ! -z $step04 ]; then
     echo "##: Train Start:"
-    $python train.py --resume exp/train4second/best.pth \
+    $python langid/train.py --resume exp/train4second/best.pth \
         $trn_dir $dev_dir $exp_dir || exit 1;
 
 fi
@@ -135,7 +135,7 @@ if [ ! -z $step05 ]; then
 fi
 
 if [ ! -z $step06 ]; then
-    CUDA_VISIBLE_DEVICES="1" $python evaluate.py data/task1_dev exp/train4second
+    CUDA_VISIBLE_DEVICES="1" $python langid/evaluate.py data/dev_all exp/train4second
 fi
 
 if [ ! -z $step07 ]; then
