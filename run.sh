@@ -110,9 +110,10 @@ dev_dir=data/dev_all
 
 if [ ! -z $step04 ]; then
     echo "##: Train Start:"
-    $python langid/train.py --resume exp/train4second/best.pth \
+    CUDA_VISIBLE_DEVICES="3" \
+    $python langid/train.py  $trn_dir $dev_dir $exp_dir || exit 1;
+        #--resume exp/train4second/best.pth \
         $trn_dir $dev_dir $exp_dir || exit 1;
-
 fi
 
 if [ ! -z $step05 ]; then
