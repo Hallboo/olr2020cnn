@@ -68,7 +68,10 @@ def ReadUtt2Lang(utt2lang_path):
     utt2lang_id = dict()
     lang2lang_id = GetLang2LangID()
     for utt,lang in utt2lang.items():
-            utt2lang_id[utt] = lang2lang_id[lang]
+            if lang in lang2lang_id:
+                utt2lang_id[utt] = lang2lang_id[lang]
+            else:
+                utt2lang_id[utt] = -1
     return (utt2lang, utt2lang_id)
 
 def TestReadUtt2Lang():
