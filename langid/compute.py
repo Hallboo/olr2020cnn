@@ -78,6 +78,20 @@ def ComputeEER(all_outputs, all_targets):
 
     return eer, thd
 
+def ShowPrediction(all_outputs, all_predict, all_targets, dev_dir, output_path):
+    _, langs = utils.ReadLang2UttGetLangLabel(os.path.join(dev_dir,'lang2utt'))
+    contents = ''
+    for i in range(all_predict.shape[0]):
+        contents += "{}\t{}\t{}\t{}\n".format(langs[all_targets[i]], langs[all_predict[i]],
+                                            all_outputs[i][all_targets[i]], all_outputs[i][all_predict[i]])
+    contents = contents[:-1]
+    
+    with open(output_path, 'w') as fp:
+        fp.write(contents)
+    
+    print("Check the File:%s"%output_path)
+
+
 if __name__=="__main__":
 
     output_egs  = 'egs/outputs.npy'
@@ -98,4 +112,5 @@ if __name__=="__main__":
         print('* Accuracy of {:6s} ........... {:6.2f}% {:4d}/{:<4d}'.format(
             hparams.lang[i], 100*class_accs[i], confu_mat[i][i], class_total[i]))
 
-    print("Acc:{} Cavg: {}  EER: {}%  threshold: {}".format(acc, cavg, eer, thd))
+    print("Acc:{}% Cavg: {}  EER: {}%  threshold: {}".format(acc*100, cavg, eer, thd))
+    #ShowPrediction(all_outputs, all_predict, all_targets, 'data/dev_all', 'output')
