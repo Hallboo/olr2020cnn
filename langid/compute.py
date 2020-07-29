@@ -19,10 +19,10 @@ def ComputeAccuracy(all_outputs, all_predict, all_targets):
     # accuracy is the sum of confusion matrix diagonal divide total number of sample
     # in evalset
 
-    class_acc = np.diagonal(confu_mat) / class_total
+    class_accs = np.diagonal(confu_mat) / class_total
     # accuracy for each class
 
-    return acc, class_acc, confu_mat
+    return round(acc, 4), class_accs, confu_mat
 
 def GetPair(all_outputs, all_targets):
     pairs = []
@@ -42,13 +42,15 @@ def ComputeCavg(all_outputs, all_targets):
     threshhold_bins = 20
     p_target = 0.5
     cavgs, min_cavg = cavg.get_cavg(pairs, lang_num, min_score, max_score, threshhold_bins, p_target)
-    print(round(min_cavg, 4))
+    return round(min_cavg, 4)
 
 def ComputeEER(all_outputs, all_targets):
     import subprocess
+
     pair, _, _, _, = GetPair(all_outputs, all_targets)
     score2target = ''
 
+    # Get <score, target/nontarget> for compute-eer in Kaldi
     for it in pair:
         lang  = it[0]
         lalab = it[1]
@@ -63,22 +65,37 @@ def ComputeEER(all_outputs, all_targets):
     with open(tempfile, 'w') as fp:
         fp.write(score2target)
 
+    # Compute EER
     cmd = 'compute-eer {}'.format(tempfile).split()
     pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     out, err = pro.communicate()
 
+    # Get the result
     err = err.decode('utf-8').replace('\n', ' ')
     pat = r".*Equal error rate is ([0-9\.]+)%, at threshold ([-0-9\.]+).*"
-    eer = float(re.sub(pat, r'\1', err))
-    thd = float(re.sub(pat, r'\2', err))
-    print(eer, thd)
+    eer = round(float(re.sub(pat, r'\1', err)), 4)
+    thd = round(float(re.sub(pat, r'\2', err)), 4)
+
+    return eer, thd
 
 if __name__=="__main__":
 
-    all_outputs = np.load("egs/outputs.npy", allow_pickle=True)
-    all_targets = np.load("egs/targets.npy", allow_pickle=True)
+    output_egs  = 'egs/outputs.npy'
+    target_egs  = 'egs/targets.npy'
+
+    all_outputs = np.load(output_egs, allow_pickle=True)
+    all_targets = np.load(target_egs, allow_pickle=True)
+
     all_predict = np.argmax(all_outputs, axis = 1)
-    ComputeAccuracy(all_outputs, all_predict, all_targets)
-    #ComputeCavg(all_outputs, all_predict, all_targets, 'data/dev_all/spk2utt', 'data/dev_all/utt2lang')
-    ComputeCavg(all_outputs, all_targets)
-    ComputeEER(all_outputs, all_targets)
+    acc, class_accs, confu_mat = ComputeAccuracy(all_outputs, all_predict, all_targets)
+    cavg = ComputeCavg(all_outputs, all_targets)
+    eer, thd = ComputeEER(all_outputs, all_targets)
+
+    from hparams import hparams
+
+    class_total = np.sum(confu_mat, axis=1)
+    for i in range(len(class_accs)):
+        print('* Accuracy of {:6s} ........... {:6.2f}% {:4d}/{:<4d}'.format(
+            hparams.lang[i], 100*class_accs[i], confu_mat[i][i], class_total[i]))
+
+    print("Acc:{} Cavg: {}  EER: {}%  threshold: {}".format(acc, cavg, eer, thd))
