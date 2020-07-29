@@ -86,10 +86,12 @@ class KaldiDataSet(Dataset):
         self.Y_lang_id = []
 
         # idx2utt for compute cavg in langid/evaluate.py
-        self.idx2utt = []
+        # self.idx2utt = []
 
         for utt,lang_id in utt2lang_id.items():
-            self.idx2utt.append(utt)
+            # self.idx2utt.append(utt)
+
+            # order is same for X_feature and Y_lang_id
             self.X_feature.append(utt2feats[utt])
             self.Y_lang_id.append(lang_id)
 
@@ -99,10 +101,15 @@ class KaldiDataSet(Dataset):
     def __getitem__(self, idx):
 
         path = self.X_feature[idx]
+
+        # (frame_num x freq_bin)
         feature = kaldiio.load_mat(path)
+
+        # (1 x frame_num x freq_bin)
         feature = np.expand_dims(feature, axis=0)
         lang_id = self.Y_lang_id[idx]
 
+        # one pair (feature, target)
         return feature, lang_id
 
 def TestFeatureLength():
