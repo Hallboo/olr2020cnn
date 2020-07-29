@@ -20,6 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from models import Cnn_9layers_AvgPooling
 from dataset import KaldiDataSet, PadCollate
+from compute import ComputeAccuracy, ComputeCavg, ComputeEER
 
 device = torch.device("cuda" if hparams.use_cuda else "cpu")
 
@@ -89,40 +90,44 @@ def Evaluate(model, criterion, dataloader, exp_dir):
     all_outputs = []
     all_targets = []
 
-    # with torch.no_grad():
-    #     for x, targets in dataloader:
-    #         x = torch.FloatTensor(x).to(device)
-    #         targets = torch.LongTensor(targets).to(device)
-    #         outputs = model(x)
-    #         loss = criterion(outputs, targets)
-    #         total_loss += loss
+    with torch.no_grad():
+        for x, targets in dataloader:
+            x = torch.FloatTensor(x).to(device)
+            targets = torch.LongTensor(targets).to(device)
+            outputs = model(x)
+            loss = criterion(outputs, targets)
+            total_loss += loss
 
-    #         all_outputs.append(outputs)
-    #         all_targets.append(targets)
+            all_outputs.append(outputs)
+            all_targets.append(targets)
 
-    #         batch += 1
-    # # forward done, got all prediction of evaluate data, Start statistic
+            batch += 1
+    # forward done, got all prediction of evaluate data, Start statistic
 
-    #eval_loss = total_loss / batch
-    # all_outputs = torch.cat(all_outputs).cpu().data.numpy()
-    # all_targets = torch.cat(all_targets).cpu().data.numpy()
+    eval_loss = total_loss / batch
+    all_outputs = torch.cat(all_outputs).cpu().data.numpy()
+    all_targets = torch.cat(all_targets).cpu().data.numpy()
 
-    # np.save("outputs.npy", all_outputs)
-    # np.save("targets.npy", all_targets)
+    # np.save("egs/outputs.npy", all_outputs)
+    # np.save("egs/targets.npy", all_targets)
 
-    all_outputs = np.load("outputs.npy", allow_pickle=True)
-    all_targets = np.load("targets.npy", allow_pickle=True)
+    #all_outputs = np.load("outputs.npy", allow_pickle=True)
+    #all_targets = np.load("targets.npy", allow_pickle=True)
+
     all_predict = np.argmax(all_outputs, axis = 1)
 
-    
-    #all_predict = np.where(all_outputs == np.amax(all_outputs))
+    acc, class_accs, confu_mat = ComputeAccuracy(all_outputs, all_predict, all_targets)
+    cavg = ComputeCavg(all_outputs, all_targets)
+    eer, thd = ComputeEER(all_outputs, all_targets)
 
-    #assert(all_predict.shape == all_targets.shape)
-    #print(all_predict)
-    print(all_outputs[0])
-    print(all_predict[0])
-    
+    class_total = np.sum(confu_mat, axis=1)
+    for i in range(len(class_accs)):
+        print('* Accuracy of {:6s} ........... {:6.2f}% {:4d}/{:<4d}'.format(
+            hparams.lang[i], 100*class_accs[i], confu_mat[i][i], class_total[i]))
 
+    print(": Acc:{}% Cavg: {}  EER: {}%  threshold: {}\nEval Loss:{}".format(
+            acc*100, cavg, eer, thd, eval_loss))
+    #
     
 
 if __name__=="__main__":
