@@ -56,8 +56,8 @@ def GetNewUttAndLang(new_utts, utt2lang_path):
 
     utt2lang_str = ""
     for utt in new_utts:
-        #print(utt)
         lang = re.findall(r'^([^\-]+)-.*', utt)[0]
+        #print(utt, lang)
         utt2lang_str += "{} {}\n".format(utt, lang)
 
     utt2lang_str = utt2lang_str[:-1]
@@ -87,9 +87,4 @@ if __name__=="__main__":
                             os.path.join(tr_data, "segments"))
 
     GetNewUttAndLang(new_utt, os.path.join(tr_data, "utt2lang"))
-
-    #for max_seg in range(4, 25):
-    #    GetNewUtt2DurAndSegment(max_seg, utt2dur,
-    #                            os.path.join(tr_data, "utt2dur"),
-    #                            os.path.join(tr_data, "segments"))
 

@@ -5,7 +5,7 @@ import numpy as np
 hparams = HParams(
     name="olr",
     sample_rate=16000,
-    num_mels=40,
+    # num_mels=80,
     n_fft=int(0.04*16000),
     # n_fft=2048,
     hop_length=int(0.02*16000),

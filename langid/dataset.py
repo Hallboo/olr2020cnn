@@ -73,7 +73,7 @@ class KaldiDataSet(Dataset):
     def __init__(self, dataset_dir):
         #mode: train | test | eval
 
-        utt2lang_path = os.path.join(dataset_dir, "utt2lang")
+        utt2lang_path = os.path.join(dataset_dir, "utt2spk")
         utt2feat_path = os.path.join(dataset_dir, "feats.scp")
 
         utt2lang, utt2lang_id = ReadUtt2Lang(utt2lang_path)

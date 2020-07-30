@@ -77,7 +77,7 @@ def evaluate(model, criterion, dataloader, exp_dir):
         print('* Accuracy of {:18s} : {:3.2f}% {:4d}/{:<4d}'.format(
             hparams.lang[i], 100*class_acc, confu_mat[i][i], class_total[i]))
 
-    print(": Accuracy All: %f%%"%(100*acc))
+    print(": Accuracy All: {}"%(100*acc))
 
     return acc, eval_loss, confu_mat
 
@@ -125,10 +125,10 @@ def Evaluate(model, criterion, dataloader, exp_dir):
         print('* Accuracy of {:6s} ........... {:6.2f}% {:4d}/{:<4d}'.format(
             hparams.lang[i], 100*class_accs[i], confu_mat[i][i], class_total[i]))
 
-    print(": Acc:{}% Cavg: {}  EER: {}%  threshold: {}\nEval Loss:{}".format(
+    print(": Acc:{:.04f}% Cavg: {}  EER: {}%  threshold: {}  Eval Loss:{:0.4f}".format(
             acc*100, cavg, eer, thd, eval_loss))
     #
-    
+    return acc, eval_loss, confu_mat, cavg, eer, thd    
 
 if __name__=="__main__":
     args = docopt(__doc__)

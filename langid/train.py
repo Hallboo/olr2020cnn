@@ -21,8 +21,9 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 from models import Cnn_9layers_AvgPooling
+from models import Cnn_13layers_AvgPooling
 from dataset import KaldiDataSet, PadCollate
-from evaluate import evaluate
+from evaluate import Evaluate
 device = torch.device("cuda" if hparams.use_cuda else "cpu")
 
 def train(trn_dir, dev_dir, exp_dir, resume):
@@ -45,16 +46,21 @@ def train(trn_dir, dev_dir, exp_dir, resume):
         model.parameters(), lr=1e-3, betas=(0.9, 0.999),
         eps=1e-08, weight_decay=0., amsgrad=True)
 
-    best_acc = 0.0
+    best_cavg = 9999.9
+    best_cavg_acc = "UNK"
+    best_cavg_eer = "UNK"
+    best_cavg_epo = 0
+    best_cavg_loss = 999.9
 
+    current_epoch = 0
     if resume != None:
         checkpoint = torch.load(resume)
         model.load_state_dict(checkpoint['model_state_dict'])
         current_epoch = checkpoint['epoch']
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         losses = checkpoint['losses']
-        if 'best_acc' in checkpoint:
-            best_acc = checkpoint['best_acc']
+        if 'best_cavg' in checkpoint:
+            best_cavg = checkpoint['best_cavg']
 
     print(model)
 
@@ -91,21 +97,28 @@ def train(trn_dir, dev_dir, exp_dir, resume):
 
             batch += 1
         
-        acc, eval_loss, confusion_matrix = evaluate(model, criterion,
-                                                    dataloader_dev, exp_dir)
-        if best_acc < acc:
-            best_acc = acc
+        acc, eval_loss, confusion_matrix, cavg, eer, thd = Evaluate(
+                                model, criterion, dataloader_dev, exp_dir)
+        if best_cavg > cavg:
+            best_cavg = cavg
+            best_cavg_acc = acc
+            best_cavg_eer = eer
+            best_cavg_epo = current_epoch
+            best_cavg_loss = eval_loss
             torch.save({
-                "epoch": current_epoch,
-                "best_acc": best_acc,
-                "losses": losses,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-            }, os.path.join(exp_dir, 'best.pth'))
-
-        print('''| Epoch: {:3d}, Eval loss: {:0.4f}, 
-            current acc: {:2.3f}%, the best: {:2.3f}%'''.format(
-                current_epoch, eval_loss, acc*100, best_acc*100))
+                "epoch" : current_epoch,
+                "cavg": cavg,
+                "acc" : acc,
+                "eer" : eer,
+                "losses" : losses,
+                "model_state_dict" : model.state_dict(),
+                "optimizer_state_dict" : optimizer.state_dict(),
+            }, os.path.join(exp_dir, 'bestcavg.pth'))
+        print(": Epoch {} Best(Cavg:{} Acc:{} Epoch:{} Loss:{})".format(current_epoch,
+                                                                        best_cavg,
+                                                                        best_cavg_acc,
+                                                                        best_cavg_epo,
+                                                                        best_cavg_loss))
         current_epoch += 1
 
 if __name__=="__main__":
@@ -130,4 +143,3 @@ if __name__=="__main__":
     print(hparams_debug_string())
 
     train(trn_dir, dev_dir, exp_dir, resume)
-
