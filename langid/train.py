@@ -114,9 +114,11 @@ def train(trn_dir, dev_dir, exp_dir, resume):
                 "model_state_dict" : model.state_dict(),
                 "optimizer_state_dict" : optimizer.state_dict(),
             }, os.path.join(exp_dir, 'bestcavg.pth'))
-        print(": Epoch {} Best(Cavg:{} Acc:{} Epoch:{} Loss:{})".format(current_epoch,
+        print(": Epoch {} Best[Cavg:{} Acc:{.2f}% EER%:{:.2f} Epoch:{} Loss:{:.4f}]".format(
+                                                                        current_epoch,
                                                                         best_cavg,
-                                                                        best_cavg_acc,
+                                                                        best_cavg_acc*100,
+                                                                        best_cavg_eer,
                                                                         best_cavg_epo,
                                                                         best_cavg_loss))
         current_epoch += 1
